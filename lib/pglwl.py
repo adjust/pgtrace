@@ -432,7 +432,6 @@ class Locknames:
 
     def set_version(self, version):
         self.__is_supported(version);
-        self.__version = str(version)
 
     def __is_supported(self, version):
         s = set();
@@ -463,3 +462,10 @@ class Locknames:
                 return tranche
 
         return None
+
+    def print_locks(self):
+        for tranche in self.__locks.keys():
+            try:
+                print("tranche %d: %s" % (tranche, self.__locks[tranche][self.__version]))
+            except:
+                return
