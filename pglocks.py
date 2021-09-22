@@ -35,6 +35,9 @@ parser.add_argument("-e", "--events", action="store_true",
 parser.add_argument("-p", "--pid", type=int,
     help="pid filter"
 )
+parser.add_argument("-c", "--count", type=int,
+    help="count until exit"
+)
 parser.add_argument("-s", "--seconds", action="store_true",
     help="display lock acquire times in seconds"
 )
@@ -327,6 +330,8 @@ def print_event(cpu,data,size):
 
 
 exiting = 0
+count = 0
+
 b["events"].open_perf_buffer(print_event);
 worker = threading.Thread(target=event_buffer_worker)
 worker.start()
@@ -348,6 +353,10 @@ while 1:
         print("LWLocks released")
         dist_release.print_log2_hist(shift, "lwlockrelease_enter")
         dist_release.clear()
+
+    count += 1
+    if count == args.count:
+        exiting = 1
 
     if exiting:
         worker.join()
