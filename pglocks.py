@@ -277,18 +277,23 @@ else:
 # time shift
 if args.seconds:
     bpf_text = bpf_text.replace('SHIFT', '(1000*1000*1000)')
+    average_shift = 1
     shift = "sec"
 elif args.milliseconds:
     bpf_text = bpf_text.replace('SHIFT', '(1000*1000)')
+    average_shift = 1000
     shift = "msec"
 elif args.microseconds:
     bpf_text = bpf_text.replace('SHIFT', '1000')
+    average_shift = 1000*1000
     shift = "usec"
 elif args.nanoseconds:
     bpf_text = bpf_text.replace('SHIFT', '1')
+    average_shift = 1000*1000*1000
     shift = "nsec"
 else:
     bpf_text = bpf_text.replace('SHIFT', '1000')
+    average_shift = 1000*1000
     shift = "usec"
 
 # compile BPF program
@@ -328,6 +333,16 @@ def print_event(cpu,data,size):
         event.tranche_id,
         l.get_lockname_by_id(event.tranche_id)))
 
+def average_wait(distmap):
+    min = 0
+    max = 0
+    for key,value in distmap.items():
+        min += 2**(key.value-1) * value.value
+        max += (2**(key.value)-1) * value.value
+
+    # shift to seconds per second
+    total = (min + max) / 2 / args.interval / average_shift
+    return total
 
 exiting = 0
 count = 0
@@ -347,11 +362,13 @@ while 1:
     print("%-9s" % strftime("%H:%M:%S"))
     print("LWLocks acquired")
     dist.print_log2_hist(shift, "lwlock_enter")
+    print("average wait: %g seconds/s" % average_wait(dist) )
     dist.clear()
 
     if args.release:
         print("LWLocks released")
         dist_release.print_log2_hist(shift, "lwlockrelease_enter")
+        print("average wait: %g seconds/s" % average_wait(dist_release) )
         dist_release.clear()
 
     count += 1
